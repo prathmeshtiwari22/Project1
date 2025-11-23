@@ -1,91 +1,124 @@
 import React, { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, TrendingUp } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 
 export default function SignIn() {
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [showPassword, setShowPassword] = useState(false);
-  const [msg, setMsg] = useState("");
   const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [error, setError] = useState("");
+  const [msg, setMsg] = useState("");
 
-  const submit = async (e) => {
-    e.preventDefault();
+  const loginHandler = async () => {
+    setError("");
     setMsg("");
+
+    if (!email || !password) {
+      setError("Email and password required");
+      return;
+    }
+
     try {
-      const res = await API.post("/auth/signin", form);
-      // Backend sends OTP for signin. Redirect to verify page with purpose=signin
-      setMsg(res.data.message || "OTP sent. Check your email.");
-      navigate(`/verify?purpose=signin&email=${encodeURIComponent(form.email)}`);
+      // ORIGINAL ROUTE: /auth/signin
+      const res = await API.post("/auth/signin", { email, password });
+
+      // This ALWAYS returns a message (never token)
+      setMsg(res.data.message);
+
+      // Redirect to OTP page for sign-in OTP verification
+      navigate("/verify", { state: { email, purpose: "signin" } });
     } catch (err) {
-      setMsg(err.response?.data?.message || "Signin error");
+      const msg = err.response?.data?.message || "Login failed";
+      setError(msg);
     }
   };
 
   return (
-    <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-slate-200">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl mb-4 shadow-lg">
-            <TrendingUp className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-slate-900 mb-2">Sign in</h1>
-          <p className="text-slate-600">Welcome back — sign in to continue</p>
+    <div className="min-h-screen flex flex-col">
+      <div className="flex flex-col md:flex-row flex-grow">
+
+        {/* LEFT */}
+        <div className="hidden md:flex md:w-1/2 justify-center items-center">
+          <img
+            src="https://mdbcdn.b-cdn.net/img/Photos/new-templates/bootstrap-login-form/draw2.webp"
+            alt="login-banner"
+            className="w-4/5 drop-shadow-xl"
+          />
         </div>
 
-        <form onSubmit={submit} className="space-y-5">
-          <div>
-            <label className="block text-slate-700 mb-2">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-          </div>
+        {/* RIGHT */}
+        <div className="flex flex-col justify-center items-center md:w-1/2 px-6 py-10">
+          <h2 className="text-2xl font-semibold mb-6 text-gray-700">Sign In</h2>
 
-          <div>
-            <label className="block text-slate-700 mb-2">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type={showPassword ? "text" : "password"}
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full pl-12 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                placeholder="Your password"
-                required
-              />
+          <div className="w-full max-w-md space-y-4">
+
+            {msg && <p className="text-emerald-600 text-center">{msg}</p>}
+            {error && <p className="text-red-600 text-center">{error}</p>}
+
+            {/* EMAIL */}
+            <div>
+              <label className="text-gray-700 font-medium">Email address</label>
+              <div className="relative mt-1">
+                <Mail className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                <input
+                  type="email"
+                  className="w-full pl-10 pr-3 py-3 bg-gray-100 border border-gray-300 rounded-xl"
+                  placeholder="Enter email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* PASSWORD */}
+            <div>
+              <label className="text-gray-700 font-medium">Password</label>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
+                <input
+                  type={showPwd ? "text" : "password"}
+                  className="w-full pl-10 pr-10 py-3 bg-gray-100 border border-gray-300 rounded-xl"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-3 text-gray-400"
+                  onClick={() => setShowPwd(!showPwd)}
+                >
+                  {showPwd ? <EyeOff /> : <Eye />}
+                </button>
+              </div>
+            </div>
+
+            {/* LOGIN BUTTON */}
+            <button
+              onClick={loginHandler}
+              className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl text-lg shadow"
+            >
+              Login
+            </button>
+
+            {/* REGISTER LINK */}
+            <p className="text-center text-gray-700 mt-2">
+              Don't have an account?{" "}
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"
+                onClick={() => navigate("/signup")}
+                className="text-red-500 hover:underline"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                Register
               </button>
-            </div>
+            </p>
           </div>
+        </div>
+      </div>
 
-          <button className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-xl">
-            Send OTP & Sign in
-          </button>
-
-          {msg && <div className="text-center text-sm text-red-600 mt-2">{msg}</div>}
-
-          <div className="flex items-center justify-between mt-4">
-            <button type="button" onClick={() => navigate("/signup")} className="text-slate-600">
-              Create account
-            </button>
-            <button type="button" onClick={() => navigate("/forgot")} className="text-emerald-600">
-              Forgot password?
-            </button>
-          </div>
-        </form>
+      {/* FOOTER */}
+      <div className="py-4 px-6 bg-emerald-700 text-white flex justify-between">
+        <p>© 2025. All rights reserved.</p>
       </div>
     </div>
   );
